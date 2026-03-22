@@ -6,11 +6,9 @@ export async function chzzkRevokeRoute(app: FastifyInstance) {
   app.post('/api/chzzk/auth/revoke', async (request, reply) => {
     const { userId, chzzkChannelId } = request.body as { userId?: string; chzzkChannelId?: string };
 
-    if (!userId) {
-      return reply.status(400).send({ error: 'userId is required' });
-    }
-
-    if (chzzkChannelId && !await requireSelf(request, reply, chzzkChannelId)) return;
+    if (!userId) return reply.status(400).send({ error: 'userId is required' });
+    if (!chzzkChannelId) return reply.status(400).send({ error: 'chzzkChannelId is required' });
+    if (!await requireSelf(request, reply, chzzkChannelId)) return;
 
     const clientId = process.env.CHZZK_CLIENT_ID;
     const clientSecret = process.env.CHZZK_CLIENT_SECRET;

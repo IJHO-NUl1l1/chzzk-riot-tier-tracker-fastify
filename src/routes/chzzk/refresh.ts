@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { getSupabase } from '../../lib/supabase';
 import { requireSelf } from '../../lib/auth';
+import { generateChzzkJwt } from '../../lib/jwt';
 
 export async function chzzkRefreshRoute(app: FastifyInstance) {
   app.post('/api/chzzk/auth/refresh', async (request, reply) => {
@@ -63,6 +64,16 @@ export async function chzzkRefreshRoute(app: FastifyInstance) {
       return reply.status(500).send({ error: 'Failed to update tokens', details: updateError.message });
     }
 
-    return reply.send({ message: 'Token refreshed successfully', expiresAt });
+    let newJwtToken: string | undefined;
+    if (chzzkChannelId) {
+      const { data: userRecord } = await getSupabase()
+        .from('users')
+        .select('chzzk_channel_name')
+        .eq('chzzk_channel_id', chzzkChannelId)
+        .single();
+      newJwtToken = generateChzzkJwt(chzzkChannelId, userRecord?.chzzk_channel_name || '', `${expiresIn}s`);
+    }
+
+    return reply.send({ message: 'Token refreshed successfully', expiresAt, jwt_token: newJwtToken });
   });
 }

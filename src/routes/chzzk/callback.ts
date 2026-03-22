@@ -85,8 +85,8 @@ export async function chzzkCallbackRoute(app: FastifyInstance) {
         return reply.status(500).send({ error: 'Failed to save tokens', details: tokenError.message });
       }
 
-      // 5. JWT 발급
-      const jwtToken = generateChzzkJwt(channelId, channelName || '');
+      // 5. JWT 발급 (치지직 access_token과 동일한 만료시간)
+      const jwtToken = generateChzzkJwt(channelId, channelName || '', `${expiresIn}s`);
 
       // 6. Redirect
       const basePath = request.cookies['chzzk_oauth_redirect'] || '/auth/success';
