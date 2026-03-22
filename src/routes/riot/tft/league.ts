@@ -13,7 +13,7 @@ export async function tftLeagueRoute(app: FastifyInstance) {
     if (!apiKey) return reply.status(500).send({ error: 'No API key available' });
 
     try {
-      const url = `https://${regionHost}/tft/league/v1/entries/by-puuid/${encodeURIComponent(puuid)}`;
+      const url = `https://${regionHost}/tft/league/v1/by-puuid/${encodeURIComponent(puuid)}`;
       const response = await axios.get(url, { headers: { 'X-Riot-Token': apiKey } });
       return reply.send(response.data);
     } catch (err: any) {
