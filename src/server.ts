@@ -65,7 +65,7 @@ app.register(tftMatchRoute);
 app.register(tftSpectatorRoute);
 
 app.get('/riot.txt', (_, reply) => {
-  reply.type('text/plain').send('c3c37aa6-68e9-49a8-84e4-3e348ff1430d');
+  reply.type('text/plain').send('cc7a7eb0-0f17-48d6-9f9e-da368c70dffb');
 });
 
 const PORT = Number(process.env.PORT) || 3000;
