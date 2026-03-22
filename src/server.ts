@@ -64,6 +64,10 @@ app.register(tftLeagueRoute);
 app.register(tftMatchRoute);
 app.register(tftSpectatorRoute);
 
+app.get('/riot.txt', (_, reply) => {
+  reply.type('text/plain').send('c3c37aa6-68e9-49a8-84e4-3e348ff1430d');
+});
+
 const PORT = Number(process.env.PORT) || 3000;
 
 app.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
