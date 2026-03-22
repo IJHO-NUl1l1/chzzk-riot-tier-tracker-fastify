@@ -30,7 +30,7 @@ export async function chzzkCallbackRoute(app: FastifyInstance) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ grantType: 'authorization_code', clientId, clientSecret, code, state }),
       });
-      const tokenData = await tokenResponse.json();
+      const tokenData = await tokenResponse.json() as any;
 
       if (!tokenResponse.ok) {
         return reply.status(tokenResponse.status).send({ error: 'Token exchange failed', details: tokenData });
@@ -46,7 +46,7 @@ export async function chzzkCallbackRoute(app: FastifyInstance) {
       const userResponse = await fetch('https://openapi.chzzk.naver.com/open/v1/users/me', {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      const userData = await userResponse.json();
+      const userData = await userResponse.json() as any;
 
       if (!userResponse.ok || !userData.content) {
         return reply.status(502).send({ error: 'Failed to fetch Chzzk user info', details: userData });

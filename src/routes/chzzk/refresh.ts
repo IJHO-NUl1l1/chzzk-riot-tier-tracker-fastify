@@ -40,7 +40,7 @@ export async function chzzkRefreshRoute(app: FastifyInstance) {
       }),
     });
 
-    const tokenData = await tokenResponse.json();
+    const tokenData = await tokenResponse.json() as any;
 
     if (!tokenResponse.ok) {
       return reply.status(tokenResponse.status).send({ error: 'Token refresh failed', details: tokenData });
