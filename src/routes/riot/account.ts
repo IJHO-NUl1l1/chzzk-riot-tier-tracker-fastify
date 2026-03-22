@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import axios from 'axios';
-import { getRoutingValue } from '../../lib/riot-api';
+import { cachedGet, getRoutingValue } from '../../lib/riot-api';
 
 export async function riotAccountRoute(app: FastifyInstance) {
   app.get('/api/riot/account/by-riot-id/:gameName/:tagLine', async (request, reply) => {
@@ -20,8 +19,8 @@ export async function riotAccountRoute(app: FastifyInstance) {
     try {
       const routing = getRoutingValue(region);
       const url = `https://${routing}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(decodedGameName)}/${encodeURIComponent(decodedTagLine)}`;
-      const response = await axios.get(url, { headers: { 'X-Riot-Token': apiKey } });
-      return reply.send(response.data);
+      const data = await cachedGet(url, apiKey);
+      return reply.send(data);
     } catch (err: any) {
       const status = err.response?.status || 500;
       return reply.status(status).send({ error: err.message, details: err.response?.data });

@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import axios from 'axios';
-import { getRegionHost } from '../../lib/riot-api';
+import { cachedGet, getRegionHost } from '../../lib/riot-api';
 
 export async function riotMasteryRoute(app: FastifyInstance) {
   app.get('/api/riot/mastery/:region/:puuid', async (request, reply) => {
@@ -14,8 +13,8 @@ export async function riotMasteryRoute(app: FastifyInstance) {
 
     try {
       const url = `https://${regionHost}/lol/champion-mastery/v4/champion-masteries/by-puuid/${encodeURIComponent(puuid)}/top`;
-      const response = await axios.get(url, { headers: { 'X-Riot-Token': apiKey } });
-      return reply.send(response.data);
+      const data = await cachedGet(url, apiKey);
+      return reply.send(data);
     } catch (err: any) {
       const status = err.response?.status || 500;
       return reply.status(status).send({ error: err.message, details: err.response?.data });

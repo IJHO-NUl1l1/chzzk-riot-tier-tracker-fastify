@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import axios from 'axios';
-import { getRegionHost } from '../../lib/riot-api';
+import { cachedGet, getRegionHost } from '../../lib/riot-api';
 
 export async function riotLeagueRoute(app: FastifyInstance) {
   app.get('/api/riot/league/:region/:puuid', async (request, reply) => {
@@ -14,8 +13,8 @@ export async function riotLeagueRoute(app: FastifyInstance) {
 
     try {
       const url = `https://${regionHost}/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`;
-      const response = await axios.get(url, { headers: { 'X-Riot-Token': apiKey } });
-      return reply.send(response.data);
+      const data = await cachedGet(url, apiKey);
+      return reply.send(data);
     } catch (err: any) {
       const status = err.response?.status || 500;
       return reply.status(status).send({ error: err.message, details: err.response?.data });

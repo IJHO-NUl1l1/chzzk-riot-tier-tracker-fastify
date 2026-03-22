@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import axios from 'axios';
-import { getRoutingValue } from '../../lib/riot-api';
+import { cachedGet, getRoutingValue } from '../../lib/riot-api';
 
 export async function riotMatchRoute(app: FastifyInstance) {
   // Match history
@@ -22,8 +21,8 @@ export async function riotMatchRoute(app: FastifyInstance) {
       if (type) params.append('type', type);
 
       const url = `https://${routing}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?${params.toString()}`;
-      const response = await axios.get(url, { headers: { 'X-Riot-Token': apiKey } });
-      return reply.send(response.data);
+      const data = await cachedGet(url, apiKey);
+      return reply.send(data);
     } catch (err: any) {
       const status = err.response?.status || 500;
       return reply.status(status).send({ error: err.message, details: err.response?.data });
@@ -40,8 +39,8 @@ export async function riotMatchRoute(app: FastifyInstance) {
     try {
       const routing = getRoutingValue(region.toLowerCase());
       const url = `https://${routing}.api.riotgames.com/lol/match/v5/matches/${encodeURIComponent(matchId)}`;
-      const response = await axios.get(url, { headers: { 'X-Riot-Token': apiKey } });
-      return reply.send(response.data);
+      const data = await cachedGet(url, apiKey);
+      return reply.send(data);
     } catch (err: any) {
       const status = err.response?.status || 500;
       return reply.status(status).send({ error: err.message, details: err.response?.data });

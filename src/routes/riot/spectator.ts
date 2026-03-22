@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import axios from 'axios';
-import { getRegionHost } from '../../lib/riot-api';
+import { cachedGet, getRegionHost } from '../../lib/riot-api';
 
 export async function riotSpectatorRoute(app: FastifyInstance) {
   app.get('/api/riot/spectator/:region/:puuid', async (request, reply) => {
@@ -14,8 +13,8 @@ export async function riotSpectatorRoute(app: FastifyInstance) {
 
     try {
       const url = `https://${regionHost}/lol/spectator/v5/active-games/by-summoner/${encodeURIComponent(puuid)}`;
-      const response = await axios.get(url, { headers: { 'X-Riot-Token': apiKey } });
-      return reply.send(response.data);
+      const data = await cachedGet(url, apiKey);
+      return reply.send(data);
     } catch (err: any) {
       if (err.response?.status === 404) {
         return reply.send({ inGame: false, message: 'Summoner is not in an active game' });

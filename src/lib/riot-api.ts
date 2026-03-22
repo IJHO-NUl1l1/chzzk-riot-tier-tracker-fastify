@@ -1,3 +1,16 @@
+import { LRUCache } from 'lru-cache';
+import axios from 'axios';
+
+const cache = new LRUCache<string, object>({ max: 1000, ttl: 1000 * 60 * 5 });
+
+export async function cachedGet(url: string, apiKey: string): Promise<object> {
+  const cached = cache.get(url);
+  if (cached) return cached;
+  const response = await axios.get(url, { headers: { 'X-Riot-Token': apiKey } });
+  cache.set(url, response.data);
+  return response.data;
+}
+
 const REGION_TO_PLATFORM: Record<string, string> = {
   kr: 'kr',
   jp: 'jp1',
