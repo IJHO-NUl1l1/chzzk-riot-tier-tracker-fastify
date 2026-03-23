@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { getSupabase } from '../../lib/supabase';
 import { requireSelf } from '../../lib/auth';
+import { broadcastToChannel } from '../../lib/realtime';
 
 export async function chzzkTierCacheRoute(app: FastifyInstance) {
   app.get('/api/chzzk/tier-cache', async (request, reply) => {
@@ -88,6 +89,13 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
         results.push({ gameType, error: error.message });
       } else {
         results.push({ gameType, success: true, data });
+        await broadcastToChannel(chzzkChannelId, 'tier_updated', {
+          gameType,
+          tier: tier ?? null,
+          rank: rank ?? null,
+          leaguePoints: leaguePoints ?? 0,
+          isPublic: isPublic ?? true,
+        });
       }
     }
 
@@ -121,6 +129,10 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
     if (error) {
       return reply.status(500).send({ error: error.message });
     }
+
+    await broadcastToChannel(chzzkChannelId, 'tier_deleted', {
+      gameType: gameType ?? null,
+    });
 
     return reply.send({ success: true });
   });
