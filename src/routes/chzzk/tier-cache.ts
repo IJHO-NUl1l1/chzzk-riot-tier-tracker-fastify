@@ -24,8 +24,8 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
   });
 
   app.post('/api/chzzk/tier-cache', async (request, reply) => {
-    const body = request.body as { chzzkChannelId?: string; entries?: any[] };
-    const { chzzkChannelId, entries } = body;
+    const body = request.body as { chzzkChannelId?: string; entries?: any[]; liveId?: string };
+    const { chzzkChannelId, entries, liveId } = body;
 
     if (!chzzkChannelId) {
       return reply.status(400).send({ error: 'chzzkChannelId is required' });
@@ -89,14 +89,16 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
         results.push({ gameType, error: error.message });
       } else {
         results.push({ gameType, success: true, data });
-        await broadcastToChannel(chzzkChannelId, 'tier_updated', {
-          chzzkChannelName: user.chzzk_channel_name,
-          gameType,
-          tier: tier ?? null,
-          rank: rank ?? null,
-          leaguePoints: leaguePoints ?? 0,
-          isPublic: isPublic ?? true,
-        });
+        if (liveId) {
+          await broadcastToChannel(liveId, 'tier_updated', {
+            chzzkChannelName: user.chzzk_channel_name,
+            gameType,
+            tier: tier ?? null,
+            rank: rank ?? null,
+            leaguePoints: leaguePoints ?? 0,
+            isPublic: isPublic ?? true,
+          });
+        }
       }
     }
 
@@ -104,7 +106,7 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
   });
 
   app.delete('/api/chzzk/tier-cache', async (request, reply) => {
-    const { chzzkChannelId, gameType } = request.query as { chzzkChannelId?: string; gameType?: string };
+    const { chzzkChannelId, gameType, liveId } = request.query as { chzzkChannelId?: string; gameType?: string; liveId?: string };
 
     if (!chzzkChannelId) {
       return reply.status(400).send({ error: 'chzzkChannelId parameter is required' });
@@ -137,10 +139,12 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
       return reply.status(500).send({ error: error.message });
     }
 
-    await broadcastToChannel(chzzkChannelId, 'tier_deleted', {
-      chzzkChannelName: user?.chzzk_channel_name ?? null,
-      gameType: gameType ?? null,
-    });
+    if (liveId) {
+      await broadcastToChannel(liveId, 'tier_deleted', {
+        chzzkChannelName: user?.chzzk_channel_name ?? null,
+        gameType: gameType ?? null,
+      });
+    }
 
     return reply.send({ success: true });
   });

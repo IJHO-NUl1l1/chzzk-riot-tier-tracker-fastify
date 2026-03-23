@@ -5,8 +5,8 @@ import { broadcastToChannel } from '../../lib/realtime';
 
 export async function chzzkPrivacyRoute(app: FastifyInstance) {
   app.post('/api/privacy/update', async (request, reply) => {
-    const body = request.body as { chzzkChannelId?: string; gameType?: string; isPublic?: boolean };
-    const { chzzkChannelId, gameType, isPublic } = body;
+    const body = request.body as { chzzkChannelId?: string; gameType?: string; isPublic?: boolean; liveId?: string };
+    const { chzzkChannelId, gameType, isPublic, liveId } = body;
 
     if (!chzzkChannelId) {
       return reply.status(400).send({ error: 'chzzkChannelId is required' });
@@ -41,11 +41,13 @@ export async function chzzkPrivacyRoute(app: FastifyInstance) {
       return reply.status(500).send({ error: error.message });
     }
 
-    await broadcastToChannel(chzzkChannelId, 'privacy_changed', {
-      chzzkChannelName: user?.chzzk_channel_name ?? null,
-      gameType: gameType ?? null,
-      isPublic,
-    });
+    if (liveId) {
+      await broadcastToChannel(liveId, 'privacy_changed', {
+        chzzkChannelName: user?.chzzk_channel_name ?? null,
+        gameType: gameType ?? null,
+        isPublic,
+      });
+    }
 
     return reply.send({ success: true });
   });
