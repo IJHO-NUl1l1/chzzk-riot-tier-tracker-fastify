@@ -20,6 +20,12 @@ export async function chzzkPrivacyRoute(app: FastifyInstance) {
 
     if (!await requireSelf(request, reply, chzzkChannelId)) return;
 
+    const { data: user } = await getSupabase()
+      .from('users')
+      .select('chzzk_channel_name')
+      .eq('chzzk_channel_id', chzzkChannelId)
+      .single();
+
     let query = getSupabase()
       .from('tier_cache')
       .update({ is_public: isPublic })
@@ -36,6 +42,7 @@ export async function chzzkPrivacyRoute(app: FastifyInstance) {
     }
 
     await broadcastToChannel(chzzkChannelId, 'privacy_changed', {
+      chzzkChannelName: user?.chzzk_channel_name ?? null,
       gameType: gameType ?? null,
       isPublic,
     });

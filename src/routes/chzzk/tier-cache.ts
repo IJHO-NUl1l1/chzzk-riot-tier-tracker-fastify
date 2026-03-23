@@ -39,7 +39,7 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
 
     const { data: user, error: userError } = await getSupabase()
       .from('users')
-      .select('id, chzzk_channel_id')
+      .select('id, chzzk_channel_id, chzzk_channel_name')
       .eq('chzzk_channel_id', chzzkChannelId)
       .single();
 
@@ -90,6 +90,7 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
       } else {
         results.push({ gameType, success: true, data });
         await broadcastToChannel(chzzkChannelId, 'tier_updated', {
+          chzzkChannelName: user.chzzk_channel_name,
           gameType,
           tier: tier ?? null,
           rank: rank ?? null,
@@ -115,6 +116,12 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
       return reply.status(400).send({ error: 'gameType must be "lol" or "tft"' });
     }
 
+    const { data: user } = await getSupabase()
+      .from('users')
+      .select('chzzk_channel_name')
+      .eq('chzzk_channel_id', chzzkChannelId)
+      .single();
+
     let query = getSupabase()
       .from('tier_cache')
       .delete()
@@ -131,6 +138,7 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
     }
 
     await broadcastToChannel(chzzkChannelId, 'tier_deleted', {
+      chzzkChannelName: user?.chzzk_channel_name ?? null,
       gameType: gameType ?? null,
     });
 
