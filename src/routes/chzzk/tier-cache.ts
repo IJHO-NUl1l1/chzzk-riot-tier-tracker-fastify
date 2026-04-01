@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { getSupabase } from '../../lib/supabase';
 import { requireSelf } from '../../lib/auth';
 import { broadcastToChannel } from '../../lib/realtime';
+import { invalidateTierCache } from '../../lib/tier-store';
 
 export async function chzzkTierCacheRoute(app: FastifyInstance) {
   app.get('/api/chzzk/tier-cache', async (request, reply) => {
@@ -89,6 +90,7 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
         results.push({ gameType, error: error.message });
       } else {
         results.push({ gameType, success: true, data });
+        invalidateTierCache(user.chzzk_channel_name);
         if (liveId) {
           await broadcastToChannel(liveId, 'tier_updated', {
             chzzkChannelName: user.chzzk_channel_name,
@@ -139,6 +141,7 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
       return reply.status(500).send({ error: error.message });
     }
 
+    invalidateTierCache(user?.chzzk_channel_name);
     if (liveId) {
       await broadcastToChannel(liveId, 'tier_deleted', {
         chzzkChannelName: user?.chzzk_channel_name ?? null,

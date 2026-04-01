@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { getSupabase } from '../../lib/supabase';
 import { requireSelf } from '../../lib/auth';
 import { broadcastToChannel } from '../../lib/realtime';
+import { invalidateTierCache } from '../../lib/tier-store';
 
 export async function chzzkPrivacyRoute(app: FastifyInstance) {
   app.post('/api/privacy/update', async (request, reply) => {
@@ -41,6 +42,7 @@ export async function chzzkPrivacyRoute(app: FastifyInstance) {
       return reply.status(500).send({ error: error.message });
     }
 
+    invalidateTierCache(user?.chzzk_channel_name);
     if (liveId) {
       await broadcastToChannel(liveId, 'privacy_changed', {
         chzzkChannelName: user?.chzzk_channel_name ?? null,

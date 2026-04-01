@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { getSupabase } from '../lib/supabase';
+import { getTierCache, setTierCache } from '../lib/tier-store';
 
 export async function tierRoute(app: FastifyInstance) {
   app.get('/api/tier', async (request, reply) => {
@@ -7,6 +8,11 @@ export async function tierRoute(app: FastifyInstance) {
 
     if (!chzzk_name) {
       return reply.status(400).send({ error: 'chzzk_name parameter is required' });
+    }
+
+    const cached = getTierCache(chzzk_name);
+    if (cached) {
+      return reply.send({ entries: cached });
     }
 
     const { data: user, error: userError } = await getSupabase()
@@ -29,6 +35,7 @@ export async function tierRoute(app: FastifyInstance) {
       return reply.status(500).send({ error: error.message });
     }
 
+    setTierCache(chzzk_name, data);
     return reply.send({ entries: data });
   });
 }
