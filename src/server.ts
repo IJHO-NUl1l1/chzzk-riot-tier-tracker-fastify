@@ -33,6 +33,7 @@ app.register(cors, {
       /^chrome-extension:\/\//,
       /^https:\/\/chzzk\.naver\.com/,
       /^http:\/\/localhost/,
+      /^https:\/\/chzzk-riot-tier-tracker-web\.vercel\.app/,
     ];
     if (allowed.some((r) => r.test(origin))) {
       cb(null, true);
