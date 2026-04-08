@@ -71,7 +71,7 @@ export async function chzzkRefreshRoute(app: FastifyInstance) {
         .select('chzzk_channel_name')
         .eq('chzzk_channel_id', chzzkChannelId)
         .single();
-      newJwtToken = generateChzzkJwt(chzzkChannelId, userRecord?.chzzk_channel_name || '', `${expiresIn}s`);
+      newJwtToken = generateChzzkJwt(chzzkChannelId, userRecord?.chzzk_channel_name || '', '30d');
     }
 
     return reply.send({ message: 'Token refreshed successfully', expiresAt, jwt_token: newJwtToken });
