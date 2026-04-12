@@ -24,7 +24,6 @@ export async function chzzkCallbackRoute(app: FastifyInstance) {
     }
 
     try {
-      // 1. Token exchange
       const tokenResponse = await fetch('https://openapi.chzzk.naver.com/auth/v1/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -42,7 +41,6 @@ export async function chzzkCallbackRoute(app: FastifyInstance) {
         return reply.status(502).send({ error: 'Invalid token response from Chzzk', rawResponse: tokenData });
       }
 
-      // 2. User info
       const userResponse = await fetch('https://openapi.chzzk.naver.com/open/v1/users/me', {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -58,7 +56,6 @@ export async function chzzkCallbackRoute(app: FastifyInstance) {
         return reply.status(502).send({ error: 'Missing channelId in user info' });
       }
 
-      // 3. UPSERT user
       const { data: user, error: userError } = await getSupabase()
         .from('users')
         .upsert(
@@ -72,7 +69,6 @@ export async function chzzkCallbackRoute(app: FastifyInstance) {
         return reply.status(500).send({ error: 'Failed to save user', details: userError?.message });
       }
 
-      // 4. UPSERT tokens
       const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
       const { error: tokenError } = await getSupabase()
         .from('chzzk_tokens')
@@ -85,10 +81,9 @@ export async function chzzkCallbackRoute(app: FastifyInstance) {
         return reply.status(500).send({ error: 'Failed to save tokens', details: tokenError.message });
       }
 
-      // 5. JWT 발급 (30일 — 치지직 토큰 만료와 무관하게 장기 발급)
+      // JWT issued for 30d, independent of Chzzk OAuth token lifetime
       const jwtToken = generateChzzkJwt(channelId, channelName || '', '30d');
 
-      // 6. Redirect
       const basePath = request.cookies['chzzk_oauth_redirect'] || '/auth/success';
       const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 3000}`;
       const redirectUrl = new URL(basePath.startsWith('http') ? basePath : serverUrl + basePath);

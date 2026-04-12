@@ -2,7 +2,6 @@ import { FastifyInstance } from 'fastify';
 import { cachedGet, getRoutingValue } from '../../lib/riot-api';
 
 export async function riotMatchRoute(app: FastifyInstance) {
-  // Match history
   app.get('/api/riot/match/:region/history/:puuid', async (request, reply) => {
     const { region, puuid } = request.params as { region: string; puuid: string };
     const { count = '20', start = '0', queue, type } = request.query as {
@@ -29,7 +28,6 @@ export async function riotMatchRoute(app: FastifyInstance) {
     }
   });
 
-  // Match detail
   app.get('/api/riot/match/:region/:matchId', async (request, reply) => {
     const { region, matchId } = request.params as { region: string; matchId: string };
 

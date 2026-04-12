@@ -3,7 +3,6 @@ import axios from 'axios';
 import { getRoutingValue } from '../../../lib/riot-api';
 
 export async function tftMatchRoute(app: FastifyInstance) {
-  // TFT Match history
   app.get('/api/riot/tft/match/:region/history/:puuid', async (request, reply) => {
     const { region, puuid } = request.params as { region: string; puuid: string };
     const { count = '20', start = '0' } = request.query as { count?: string; start?: string };
@@ -23,7 +22,6 @@ export async function tftMatchRoute(app: FastifyInstance) {
     }
   });
 
-  // TFT Match detail
   app.get('/api/riot/tft/match/:region/:matchId', async (request, reply) => {
     const { region, matchId } = request.params as { region: string; matchId: string };
 

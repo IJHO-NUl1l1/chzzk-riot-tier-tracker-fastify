@@ -99,6 +99,8 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
             rank: rank ?? null,
             leaguePoints: leaguePoints ?? 0,
             isPublic: isPublic ?? true,
+            riotGameName: gameName ?? null,
+            riotTagLine: tagLine ?? null,
           });
         }
       }
