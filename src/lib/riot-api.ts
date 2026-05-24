@@ -11,6 +11,12 @@ export async function cachedGet(url: string, apiKey: string): Promise<object> {
   return response.data;
 }
 
+export async function freshGet(url: string, apiKey: string): Promise<object> {
+  const response = await axios.get(url, { headers: { 'X-Riot-Token': apiKey } });
+  cache.set(url, response.data);
+  return response.data;
+}
+
 const REGION_TO_PLATFORM: Record<string, string> = {
   kr: 'kr',
   jp: 'jp1',

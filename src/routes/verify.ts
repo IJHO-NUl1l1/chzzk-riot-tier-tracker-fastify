@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { getSupabase } from '../lib/supabase';
 import { requireSelf } from '../lib/auth';
-import { cachedGet, getRegionHost } from '../lib/riot-api';
+import { cachedGet, freshGet, getRegionHost } from '../lib/riot-api';
 
 const ICON_ID_MIN = 1;
 const ICON_ID_MAX = 28;
@@ -15,14 +15,14 @@ function pickRandomIconId(exclude: number): number {
   return id;
 }
 
-async function getSummonerIconId(puuid: string, region: string, gameType: string, apiKey: string): Promise<number | null> {
+async function getSummonerIconId(puuid: string, region: string, gameType: string, apiKey: string, useCache = true): Promise<number | null> {
   const regionHost = getRegionHost(region);
   if (!regionHost) return null;
   const path = gameType === 'tft'
     ? `tft/summoner/v1/summoners/by-puuid/${encodeURIComponent(puuid)}`
     : `lol/summoner/v4/summoners/by-puuid/${encodeURIComponent(puuid)}`;
   const url = `https://${regionHost}/${path}`;
-  const data = await cachedGet(url, apiKey) as { profileIconId?: number };
+  const data = await (useCache ? cachedGet : freshGet)(url, apiKey) as { profileIconId?: number };
   return data.profileIconId ?? null;
 }
 
@@ -117,7 +117,7 @@ export async function verifyRoute(app: FastifyInstance) {
 
     let currentIconId: number | null;
     try {
-      currentIconId = await getSummonerIconId(puuid, region, gameType, apiKey);
+      currentIconId = await getSummonerIconId(puuid, region, gameType, apiKey, false);
     } catch (err: any) {
       const status = err.response?.status || 500;
       return reply.status(status).send({ error: 'Failed to fetch summoner info', details: err.message });
