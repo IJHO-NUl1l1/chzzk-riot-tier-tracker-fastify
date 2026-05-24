@@ -46,6 +46,7 @@ export async function verifyRoute(app: FastifyInstance) {
       currentIconId = await getSummonerIconId(puuid, region, apiKey);
     } catch (err: any) {
       const status = err.response?.status || 500;
+      request.log.error({ status, detail: err.message, responseData: err.response?.data }, 'getSummonerIconId failed');
       return reply.status(status).send({ error: 'Failed to fetch summoner info', details: err.message });
     }
 
