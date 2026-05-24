@@ -15,10 +15,13 @@ function pickRandomIconId(exclude: number): number {
   return id;
 }
 
-async function getSummonerIconId(puuid: string, region: string, apiKey: string): Promise<number | null> {
+async function getSummonerIconId(puuid: string, region: string, gameType: string, apiKey: string): Promise<number | null> {
   const regionHost = getRegionHost(region);
   if (!regionHost) return null;
-  const url = `https://${regionHost}/lol/summoner/v4/summoners/by-puuid/${encodeURIComponent(puuid)}`;
+  const path = gameType === 'tft'
+    ? `tft/summoner/v1/summoners/by-puuid/${encodeURIComponent(puuid)}`
+    : `lol/summoner/v4/summoners/by-puuid/${encodeURIComponent(puuid)}`;
+  const url = `https://${regionHost}/${path}`;
   const data = await cachedGet(url, apiKey) as { profileIconId?: number };
   return data.profileIconId ?? null;
 }
@@ -43,11 +46,15 @@ export async function verifyRoute(app: FastifyInstance) {
 
     let currentIconId: number | null;
     try {
-      currentIconId = await getSummonerIconId(puuid, region, apiKey);
+      currentIconId = await getSummonerIconId(puuid, region, gameType, apiKey);
     } catch (err: any) {
       const status = err.response?.status || 500;
-      request.log.error({ status, detail: err.message, responseData: err.response?.data }, 'getSummonerIconId failed');
-      return reply.status(status).send({ error: 'Failed to fetch summoner info', details: err.message });
+      return reply.status(status).send({
+        error: 'Failed to fetch summoner info',
+        details: err.message,
+        riotStatus: err.response?.status,
+        riotData: err.response?.data,
+      });
     }
 
     const requiredIconId = pickRandomIconId(currentIconId ?? -1);
@@ -106,7 +113,7 @@ export async function verifyRoute(app: FastifyInstance) {
 
     let currentIconId: number | null;
     try {
-      currentIconId = await getSummonerIconId(puuid, region, apiKey);
+      currentIconId = await getSummonerIconId(puuid, region, gameType, apiKey);
     } catch (err: any) {
       const status = err.response?.status || 500;
       return reply.status(status).send({ error: 'Failed to fetch summoner info', details: err.message });
