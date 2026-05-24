@@ -4,6 +4,7 @@ import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 
 import { tierRoute } from './routes/tier';
+import { verifyRoute } from './routes/verify';
 import { chzzkAuthRoute } from './routes/chzzk/auth';
 import { chzzkCallbackRoute } from './routes/chzzk/callback';
 import { chzzkRefreshRoute } from './routes/chzzk/refresh';
@@ -47,6 +48,7 @@ app.register(cors, {
 app.register(cookie);
 
 app.register(tierRoute);
+app.register(verifyRoute);
 app.register(chzzkAuthRoute);
 app.register(chzzkCallbackRoute);
 app.register(chzzkRefreshRoute);
