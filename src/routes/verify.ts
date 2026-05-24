@@ -41,7 +41,9 @@ export async function verifyRoute(app: FastifyInstance) {
     }
     if (!await requireSelf(request, reply, chzzkChannelId)) return;
 
-    const apiKey = process.env.RIOT_LOL_API_KEY;
+    const apiKey = gameType === 'tft'
+      ? (process.env.RIOT_TFT_API_KEY || process.env.RIOT_LOL_API_KEY)
+      : process.env.RIOT_LOL_API_KEY;
     if (!apiKey) return reply.status(500).send({ error: 'No API key available' });
 
     let currentIconId: number | null;
@@ -108,7 +110,9 @@ export async function verifyRoute(app: FastifyInstance) {
       return reply.status(410).send({ error: 'Verification session expired. Please start again.' });
     }
 
-    const apiKey = process.env.RIOT_LOL_API_KEY;
+    const apiKey = gameType === 'tft'
+      ? (process.env.RIOT_TFT_API_KEY || process.env.RIOT_LOL_API_KEY)
+      : process.env.RIOT_LOL_API_KEY;
     if (!apiKey) return reply.status(500).send({ error: 'No API key available' });
 
     let currentIconId: number | null;
