@@ -8,11 +8,7 @@ export async function broadcastToChannel(
   const supabase = getSupabase();
   const channel = supabase.channel(`tier_updates:${chzzkChannelId}`);
 
-  await channel.send({
-    type: 'broadcast',
-    event,
-    payload: { chzzkChannelId, ...payload },
-  });
+  await channel.httpSend(event, { chzzkChannelId, ...payload });
 
   supabase.removeChannel(channel);
 }
