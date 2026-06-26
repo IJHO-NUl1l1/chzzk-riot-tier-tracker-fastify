@@ -29,7 +29,7 @@ export async function chzzkChatChannelRoute(app: FastifyInstance) {
       const status = data?.content?.status;
 
       if (!chatChannelId) {
-        return reply.status(404).send({ error: 'chatChannelId not found', debug: data });
+        return reply.status(404).send({ error: 'chatChannelId not found' });
       }
 
       return reply.send({ chatChannelId, status });
