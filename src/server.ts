@@ -30,7 +30,7 @@ import { tftLeagueRoute } from './routes/riot/tft/league';
 import { tftMatchRoute } from './routes/riot/tft/match';
 import { tftSpectatorRoute } from './routes/riot/tft/spectator';
 
-const app = Fastify({ logger: true });
+const app = Fastify({ logger: true, trustProxy: true });
 
 app.register(cors, {
   origin: (origin, cb) => {
