@@ -10,8 +10,8 @@ export type TierEntry = {
 };
 
 const cache = new LRUCache<string, TierEntry[]>({
-  max: 500,
-  ttl: 5 * 60 * 1000, // 5분
+  max: 5000,
+  ttl: 5 * 60 * 1000,
 });
 
 function key(chzzkName: string): string {

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
+import rateLimit from '@fastify/rate-limit';
 
 import { tierRoute } from './routes/tier';
 import { verifyRoute } from './routes/verify';
@@ -50,6 +51,10 @@ app.register(cors, {
 });
 
 app.register(cookie);
+
+app.register(rateLimit, {
+  global: false, // 라우트별 개별 적용
+});
 
 app.register(tierRoute);
 app.register(verifyRoute);
