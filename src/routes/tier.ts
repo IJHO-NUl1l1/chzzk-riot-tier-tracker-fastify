@@ -29,14 +29,7 @@ async function fetchFromDB(chzzk_name: string): Promise<TierEntry[]> {
 }
 
 export async function tierRoute(app: FastifyInstance) {
-  app.get('/api/tier', {
-    config: {
-      rateLimit: {
-        max: 100,
-        timeWindow: '1 minute',
-      },
-    },
-  }, async (request, reply) => {
+  app.get('/api/tier', async (request, reply) => {
     const { chzzk_name } = request.query as { chzzk_name?: string };
 
     if (!chzzk_name) {

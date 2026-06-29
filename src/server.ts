@@ -53,7 +53,9 @@ app.register(cors, {
 app.register(cookie);
 
 app.register(rateLimit, {
-  global: false, // 라우트별 개별 적용
+  max: 100,
+  timeWindow: '1 minute',
+  keyGenerator: (request) => request.ip,
 });
 
 app.register(tierRoute);
