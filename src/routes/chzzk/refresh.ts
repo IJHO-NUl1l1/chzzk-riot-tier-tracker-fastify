@@ -2,14 +2,22 @@ import { FastifyInstance } from 'fastify';
 import { getSupabase } from '../../lib/supabase';
 import { requireSelf } from '../../lib/auth';
 import { generateChzzkJwt } from '../../lib/jwt';
+import { nonEmptyString } from '../../schemas/common';
+
+const refreshBodySchema = {
+  body: {
+    type: 'object',
+    properties: {
+      userId: nonEmptyString,
+      chzzkChannelId: nonEmptyString,
+    },
+    required: ['userId'],
+  },
+};
 
 export async function chzzkRefreshRoute(app: FastifyInstance) {
-  app.post('/api/chzzk/auth/refresh', async (request, reply) => {
-    const { userId, chzzkChannelId } = request.body as { userId?: string; chzzkChannelId?: string };
-
-    if (!userId) {
-      return reply.status(400).send({ error: 'userId is required' });
-    }
+  app.post('/api/chzzk/auth/refresh', { schema: refreshBodySchema }, async (request, reply) => {
+    const { userId, chzzkChannelId } = request.body as { userId: string; chzzkChannelId?: string };
 
     if (chzzkChannelId && !await requireSelf(request, reply, chzzkChannelId)) return;
 

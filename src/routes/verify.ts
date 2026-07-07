@@ -2,6 +2,28 @@ import { FastifyInstance } from 'fastify';
 import { getSupabase } from '../lib/supabase';
 import { requireSelf } from '../lib/auth';
 import { cachedGet, freshGet, getRegionHost } from '../lib/riot-api';
+import { gameTypeSchema, nonEmptyString } from '../schemas/common';
+
+// start/confirm이 동일한 body를 받으므로 스키마를 공유한다.
+const verifyBodySchema = {
+  body: {
+    type: 'object',
+    properties: {
+      chzzkChannelId: nonEmptyString,
+      puuid: nonEmptyString,
+      gameType: gameTypeSchema,
+      region: nonEmptyString,
+    },
+    required: ['chzzkChannelId', 'puuid', 'gameType', 'region'],
+  },
+};
+
+interface VerifyBody {
+  chzzkChannelId: string;
+  puuid: string;
+  gameType: 'lol' | 'tft';
+  region: string;
+}
 
 const ICON_ID_MIN = 1;
 const ICON_ID_MAX = 28;
@@ -27,18 +49,9 @@ async function getSummonerIconId(puuid: string, region: string, gameType: string
 }
 
 export async function verifyRoute(app: FastifyInstance) {
-  app.post('/api/verify/start', async (request, reply) => {
-    const body = request.body as {
-      chzzkChannelId?: string;
-      puuid?: string;
-      gameType?: string;
-      region?: string;
-    };
-    const { chzzkChannelId, puuid, gameType, region } = body;
+  app.post('/api/verify/start', { schema: verifyBodySchema }, async (request, reply) => {
+    const { chzzkChannelId, puuid, gameType, region } = request.body as VerifyBody;
 
-    if (!chzzkChannelId || !puuid || !gameType || !region) {
-      return reply.status(400).send({ error: 'chzzkChannelId, puuid, gameType, region are required' });
-    }
     if (!await requireSelf(request, reply, chzzkChannelId)) return;
 
     const apiKey = gameType === 'tft'
@@ -80,18 +93,9 @@ export async function verifyRoute(app: FastifyInstance) {
     return reply.send({ iconId: requiredIconId, expiresAt });
   });
 
-  app.post('/api/verify/confirm', async (request, reply) => {
-    const body = request.body as {
-      chzzkChannelId?: string;
-      puuid?: string;
-      gameType?: string;
-      region?: string;
-    };
-    const { chzzkChannelId, puuid, gameType, region } = body;
+  app.post('/api/verify/confirm', { schema: verifyBodySchema }, async (request, reply) => {
+    const { chzzkChannelId, puuid, gameType, region } = request.body as VerifyBody;
 
-    if (!chzzkChannelId || !puuid || !gameType || !region) {
-      return reply.status(400).send({ error: 'chzzkChannelId, puuid, gameType, region are required' });
-    }
     if (!await requireSelf(request, reply, chzzkChannelId)) return;
 
     const { data: session, error: sessionError } = await getSupabase()

@@ -3,21 +3,27 @@ import { getSupabase } from '../../lib/supabase';
 import { requireSelf } from '../../lib/auth';
 import { broadcastToChannel } from '../../lib/realtime';
 import { invalidateTierCache } from '../../lib/tier-store';
+import { gameTypeSchema, nonEmptyString } from '../../schemas/common';
+
+// isPublic을 boolean으로 강제한다 — 이전 수동 검증은 문자열 "true"도
+// truthy로 통과시켜 DB에 문자열이 저장될 수 있었다.
+const updateSchema = {
+  body: {
+    type: 'object',
+    properties: {
+      chzzkChannelId: nonEmptyString,
+      gameType: gameTypeSchema,
+      isPublic: { type: 'boolean' },
+      liveId: { type: 'string' },
+    },
+    required: ['chzzkChannelId', 'isPublic'],
+  },
+};
 
 export async function chzzkPrivacyRoute(app: FastifyInstance) {
-  app.post('/api/privacy/update', async (request, reply) => {
-    const body = request.body as { chzzkChannelId?: string; gameType?: string; isPublic?: boolean; liveId?: string };
-    const { chzzkChannelId, gameType, isPublic, liveId } = body;
-
-    if (!chzzkChannelId) {
-      return reply.status(400).send({ error: 'chzzkChannelId is required' });
-    }
-    if (isPublic === undefined || isPublic === null) {
-      return reply.status(400).send({ error: 'isPublic is required' });
-    }
-    if (gameType && !['lol', 'tft'].includes(gameType)) {
-      return reply.status(400).send({ error: 'gameType must be "lol" or "tft"' });
-    }
+  app.post('/api/privacy/update', { schema: updateSchema }, async (request, reply) => {
+    const { chzzkChannelId, gameType, isPublic, liveId } =
+      request.body as { chzzkChannelId: string; gameType?: 'lol' | 'tft'; isPublic: boolean; liveId?: string };
 
     if (!await requireSelf(request, reply, chzzkChannelId)) return;
 

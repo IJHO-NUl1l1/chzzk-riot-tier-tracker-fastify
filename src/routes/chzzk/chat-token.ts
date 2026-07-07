@@ -1,12 +1,17 @@
 import { FastifyInstance } from 'fastify';
+import { nonEmptyString } from '../../schemas/common';
+
+const chatTokenSchema = {
+  querystring: {
+    type: 'object',
+    properties: { chatChannelId: nonEmptyString },
+    required: ['chatChannelId'],
+  },
+};
 
 export async function chzzkChatTokenRoute(app: FastifyInstance) {
-  app.get('/api/chzzk/chat-token', async (request, reply) => {
-    const { chatChannelId } = request.query as { chatChannelId?: string };
-
-    if (!chatChannelId) {
-      return reply.status(400).send({ error: 'chatChannelId is required' });
-    }
+  app.get('/api/chzzk/chat-token', { schema: chatTokenSchema }, async (request, reply) => {
+    const { chatChannelId } = request.query as { chatChannelId: string };
 
     try {
       const res = await fetch(

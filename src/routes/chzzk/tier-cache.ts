@@ -3,14 +3,108 @@ import { getSupabase } from '../../lib/supabase';
 import { requireSelf } from '../../lib/auth';
 import { broadcastToChannel } from '../../lib/realtime';
 import { invalidateTierCache } from '../../lib/tier-store';
+import { errorResponse, gameTypeSchema, nonEmptyString, nullableString } from '../../schemas/common';
+
+const getSchema = {
+  querystring: {
+    type: 'object',
+    properties: { chzzkChannelId: nonEmptyString },
+    required: ['chzzkChannelId'],
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        linked: { type: 'boolean' },
+        entries: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              game_type: { type: 'string' },
+              tier: nullableString,
+              rank: nullableString,
+              league_points: { type: 'number' },
+              riot_puuid: { type: 'string' },
+              riot_game_name: nullableString,
+              riot_tag_line: nullableString,
+              is_public: { type: 'boolean' },
+              is_verified: { type: 'boolean' },
+              cached_at: nullableString,
+            },
+          },
+        },
+      },
+    },
+    500: errorResponse,
+  },
+};
+
+// entries 항목의 구조 검증. 이전에는 `entries?: any[]` 캐스팅 후 루프 안에서
+// 항목별로 수동 검사했지만, 스키마 위반 항목이 하나라도 있으면 이제 요청
+// 전체가 400으로 거부된다(호출자는 우리 익스텐션뿐이라 항상 유효한 항목을
+// 보낸다). queueType은 game_type에서 1:1로 유도되는 값이라 컬럼과 함께 제거.
+const postSchema = {
+  body: {
+    type: 'object',
+    properties: {
+      chzzkChannelId: nonEmptyString,
+      liveId: { type: 'string' },
+      entries: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          type: 'object',
+          properties: {
+            riotPuuid: nonEmptyString,
+            gameType: gameTypeSchema,
+            tier: nullableString,
+            rank: nullableString,
+            leaguePoints: { type: 'number' },
+            wins: { type: 'number' },
+            losses: { type: 'number' },
+            gameName: nullableString,
+            tagLine: nullableString,
+            isPublic: { type: 'boolean' },
+            isVerified: { type: 'boolean' },
+          },
+          required: ['riotPuuid', 'gameType'],
+        },
+      },
+    },
+    required: ['chzzkChannelId', 'entries'],
+  },
+};
+
+const deleteSchema = {
+  querystring: {
+    type: 'object',
+    properties: {
+      chzzkChannelId: nonEmptyString,
+      gameType: gameTypeSchema,
+      liveId: { type: 'string' },
+    },
+    required: ['chzzkChannelId'],
+  },
+};
+
+interface TierCacheEntry {
+  riotPuuid: string;
+  gameType: 'lol' | 'tft';
+  tier?: string | null;
+  rank?: string | null;
+  leaguePoints?: number;
+  wins?: number;
+  losses?: number;
+  gameName?: string | null;
+  tagLine?: string | null;
+  isPublic?: boolean;
+  isVerified?: boolean;
+}
 
 export async function chzzkTierCacheRoute(app: FastifyInstance) {
-  app.get('/api/chzzk/tier-cache', async (request, reply) => {
-    const { chzzkChannelId } = request.query as { chzzkChannelId?: string };
-
-    if (!chzzkChannelId) {
-      return reply.status(400).send({ error: 'chzzkChannelId parameter is required' });
-    }
+  app.get('/api/chzzk/tier-cache', { schema: getSchema }, async (request, reply) => {
+    const { chzzkChannelId } = request.query as { chzzkChannelId: string };
 
     const { data, error } = await getSupabase()
       .from('tier_cache')
@@ -24,19 +118,11 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
     return reply.send({ linked: data.length > 0, entries: data });
   });
 
-  app.post('/api/chzzk/tier-cache', async (request, reply) => {
-    const body = request.body as { chzzkChannelId?: string; entries?: any[]; liveId?: string };
-    const { chzzkChannelId, entries, liveId } = body;
-
-    if (!chzzkChannelId) {
-      return reply.status(400).send({ error: 'chzzkChannelId is required' });
-    }
+  app.post('/api/chzzk/tier-cache', { schema: postSchema }, async (request, reply) => {
+    const { chzzkChannelId, entries, liveId } =
+      request.body as { chzzkChannelId: string; entries: TierCacheEntry[]; liveId?: string };
 
     if (!await requireSelf(request, reply, chzzkChannelId)) return;
-
-    if (!Array.isArray(entries) || entries.length === 0) {
-      return reply.status(400).send({ error: 'entries array is required and must not be empty' });
-    }
 
     const { data: user, error: userError } = await getSupabase()
       .from('users')
@@ -51,17 +137,7 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
     const results = [];
 
     for (const entry of entries) {
-      const { riotPuuid, gameType, queueType, tier, rank, leaguePoints, wins, losses, gameName, tagLine, isPublic, isVerified } = entry;
-
-      if (!riotPuuid || !gameType) {
-        results.push({ gameType: gameType ?? 'unknown', error: 'riotPuuid and gameType are required' });
-        continue;
-      }
-
-      if (!['lol', 'tft'].includes(gameType)) {
-        results.push({ gameType, error: 'gameType must be "lol" or "tft"' });
-        continue;
-      }
+      const { riotPuuid, gameType, tier, rank, leaguePoints, wins, losses, gameName, tagLine, isPublic, isVerified } = entry;
 
       const { data, error } = await getSupabase()
         .from('tier_cache')
@@ -70,7 +146,6 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
             chzzk_channel_id: chzzkChannelId,
             riot_puuid: riotPuuid,
             game_type: gameType,
-            queue_type: queueType ?? null,
             tier: tier ?? null,
             rank: rank ?? null,
             league_points: leaguePoints ?? 0,
@@ -110,18 +185,11 @@ export async function chzzkTierCacheRoute(app: FastifyInstance) {
     return reply.send({ results });
   });
 
-  app.delete('/api/chzzk/tier-cache', async (request, reply) => {
-    const { chzzkChannelId, gameType, liveId } = request.query as { chzzkChannelId?: string; gameType?: string; liveId?: string };
-
-    if (!chzzkChannelId) {
-      return reply.status(400).send({ error: 'chzzkChannelId parameter is required' });
-    }
+  app.delete('/api/chzzk/tier-cache', { schema: deleteSchema }, async (request, reply) => {
+    const { chzzkChannelId, gameType, liveId } =
+      request.query as { chzzkChannelId: string; gameType?: 'lol' | 'tft'; liveId?: string };
 
     if (!await requireSelf(request, reply, chzzkChannelId)) return;
-
-    if (gameType && !['lol', 'tft'].includes(gameType)) {
-      return reply.status(400).send({ error: 'gameType must be "lol" or "tft"' });
-    }
 
     const { data: user } = await getSupabase()
       .from('users')

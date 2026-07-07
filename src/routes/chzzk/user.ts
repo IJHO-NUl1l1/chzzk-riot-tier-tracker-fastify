@@ -1,13 +1,18 @@
 import { FastifyInstance } from 'fastify';
 import { getSupabase } from '../../lib/supabase';
+import { nonEmptyString } from '../../schemas/common';
+
+const userQuerySchema = {
+  querystring: {
+    type: 'object',
+    properties: { channelName: nonEmptyString },
+    required: ['channelName'],
+  },
+};
 
 export async function chzzkUserRoute(app: FastifyInstance) {
-  app.get('/api/chzzk/user', async (request, reply) => {
-    const { channelName } = request.query as { channelName?: string };
-
-    if (!channelName) {
-      return reply.status(400).send({ error: 'channelName parameter is required' });
-    }
+  app.get('/api/chzzk/user', { schema: userQuerySchema }, async (request, reply) => {
+    const { channelName } = request.query as { channelName: string };
 
     const { data: user, error: userError } = await getSupabase()
       .from('users')

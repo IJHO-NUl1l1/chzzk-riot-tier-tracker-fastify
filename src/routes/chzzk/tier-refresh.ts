@@ -4,6 +4,25 @@ import { requireSelf } from '../../lib/auth';
 import { broadcastToChannel } from '../../lib/realtime';
 import { invalidateTierCache } from '../../lib/tier-store';
 import { freshGet, getRegionHost } from '../../lib/riot-api';
+import { gameTypeSchema, nonEmptyString, nullableString } from '../../schemas/common';
+
+// currentTier/currentRank는 익스텐션이 언랭 상태에서 명시적 null을 보내므로
+// nullable로 선언해야 한다 (liveId/gameType처럼 falsy 시 생략되는 필드와 다름).
+const refreshSchema = {
+  body: {
+    type: 'object',
+    properties: {
+      chzzkChannelId: nonEmptyString,
+      gameType: gameTypeSchema,
+      region: nonEmptyString,
+      currentTier: nullableString,
+      currentRank: nullableString,
+      currentLP: { type: ['number', 'null'] },
+      liveId: { type: ['string', 'null'] },
+    },
+    required: ['chzzkChannelId', 'gameType', 'region'],
+  },
+};
 
 const QUEUE_TYPE: Record<string, string> = {
   lol: 'RANKED_SOLO_5x5',
@@ -61,26 +80,17 @@ async function fetchFreshTier(
 }
 
 export async function chzzkTierRefreshRoute(app: FastifyInstance) {
-  app.post('/api/chzzk/tier-refresh', async (request, reply) => {
-    const body = request.body as {
-      chzzkChannelId?: string;
-      gameType?: string;
-      region?: string;
-      currentTier?: string | null;
-      currentRank?: string | null;
-      currentLP?: number;
-      liveId?: string | null;
-    };
-
-    const { chzzkChannelId, gameType, region, currentTier, currentRank, currentLP, liveId } = body;
-
-    if (!chzzkChannelId || !gameType || !region) {
-      return reply.status(400).send({ error: 'chzzkChannelId, gameType, region are required' });
-    }
-
-    if (!['lol', 'tft'].includes(gameType)) {
-      return reply.status(400).send({ error: 'gameType must be "lol" or "tft"' });
-    }
+  app.post('/api/chzzk/tier-refresh', { schema: refreshSchema }, async (request, reply) => {
+    const { chzzkChannelId, gameType, region, currentTier, currentRank, currentLP, liveId } =
+      request.body as {
+        chzzkChannelId: string;
+        gameType: 'lol' | 'tft';
+        region: string;
+        currentTier?: string | null;
+        currentRank?: string | null;
+        currentLP?: number | null;
+        liveId?: string | null;
+      };
 
     if (!await requireSelf(request, reply, chzzkChannelId)) return;
 
